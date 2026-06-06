@@ -278,10 +278,8 @@ namespace TS_DS_01
 
             int position1 = sortedSeverity.Count / 2;
             int position2 = (sortedSeverity.Count / 2) - 1;
-
             double firstNum = sortedSeverity[position1];
             double secondNum = sortedSeverity[position2];
-
             double median = (firstNum + secondNum) / 2.0;
 
             Console.WriteLine("The median is: " + median);
