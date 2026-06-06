@@ -288,7 +288,6 @@ namespace TS_DS_01
             if (index == -1)
             {
                 Console.WriteLine(targetSeverity + " the target severity was not found");
-                Console.WriteLine(targetSeverity + " the target severity found at index: " + index);
             }
             else
             {
