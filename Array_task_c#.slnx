@@ -2,4 +2,5 @@
   <Project Path="Array_task_c#/Array_task_c#.csproj" />
   <Project Path="list_task/list_task.csproj" />
   <Project Path="solve_list/solve_list.csproj" />
+  <Project Path="StackAndQueue/StackAndQueue.csproj" />
 </Solution>
