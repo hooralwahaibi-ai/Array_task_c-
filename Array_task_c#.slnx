@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Array_task_c#/Array_task_c#.csproj" />
+  <Project Path="Flight_Management_System/Flight_Management_System.csproj" />
   <Project Path="list_task/list_task.csproj" />
   <Project Path="solve_list/solve_list.csproj" />
   <Project Path="StackAndQueue/StackAndQueue.csproj" />

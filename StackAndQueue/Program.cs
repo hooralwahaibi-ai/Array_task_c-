@@ -347,7 +347,100 @@ namespace TS_DS_03
                 bracketStack.Pop();
             }
         }
+        public static void PrintSpoolerWithPriorityReInsertion()
+        {
+            Queue<string> spooler = new Queue<string>();
+            Queue<string> tempQueue = new Queue<string>();
 
+            spooler.Enqueue("Report:45");
+            spooler.Enqueue("Booklet:80");
+            spooler.Enqueue("Invoice:10");
+            spooler.Enqueue("Poster:70");
+            spooler.Enqueue("Notes:20");
+            spooler.Enqueue("Manual:120");
+            spooler.Enqueue("Receipt:200");
+            spooler.Enqueue("Assignment:30");
+
+            Console.WriteLine("print queue");
+
+            int position = 1;
+
+            foreach (string job in spooler)
+            {
+                Console.WriteLine("Position " + position + ": " + job);
+                position++;
+            }
+
+            int processCount = spooler.Count;
+
+            for (int i = 0; i < processCount; i++)
+            {
+                string job = spooler.Dequeue();
+                string[] parts = job.Split(':');
+                int pages = int.Parse(parts[1]);
+
+                if (pages > 50)
+                {
+                    spooler.Enqueue(job);
+                }
+                else
+                {
+                    tempQueue.Enqueue(job);
+                }
+            }
+
+            while (spooler.Count > 0)
+            {
+                tempQueue.Enqueue(spooler.Dequeue());
+            }
+
+            while (tempQueue.Count > 0)
+            {
+                spooler.Enqueue(tempQueue.Dequeue());
+            }
+
+            Console.WriteLine("Reordered Print Queue");
+
+            position = 1;
+
+            foreach (string job in spooler)
+            {
+                Console.WriteLine("Position " + position + ": " + job);
+                position++;
+            }
+
+            Console.WriteLine("Processing Print Jobs");
+
+            int totalPages = 0;
+            int largeJobs = 0;
+            int standardJobs = 0;
+
+            while (spooler.Count > 0)
+            {
+                string job = spooler.Dequeue();
+                string[] parts = job.Split(':');
+
+                string jobName = parts[0];
+                int pages = int.Parse(parts[1]);
+
+                Console.WriteLine("Printing job: " + jobName + " with " + pages + " pages");
+
+                totalPages = totalPages + pages;
+
+                if (pages > 50)
+                {
+                    largeJobs++;
+                }
+                else
+                {
+                    standardJobs++;
+                }
+            }
+
+            Console.WriteLine("Total pages printed: " + totalPages);
+            Console.WriteLine("Large-format jobs: " + largeJobs);
+            Console.WriteLine("Standard jobs: " + standardJobs);
+        }
         static void Main(string[] args)
         {
             bool exit = false;
@@ -395,6 +488,9 @@ namespace TS_DS_03
                         ParenthesisValidator("(a + b]");
                         Console.WriteLine("test 3");
                         ParenthesisValidator("{a + [b * c]");
+                        break;
+                    case 6:
+                        PrintSpoolerWithPriorityReInsertion();
                         break;
                 }
             }
