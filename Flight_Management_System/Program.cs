@@ -269,9 +269,9 @@ namespace FlightManagementSystem
 
             Console.WriteLine("Select option:");
             int option;
-            bool optionResult = int.TryParse(Console.ReadLine(), out option);
+            bool enteroption = int.TryParse(Console.ReadLine(), out option);
 
-            if (optionResult == false)
+            if (enteroption == false)
             {
                 Console.WriteLine("Invalid option.");
                 return;
@@ -441,7 +441,139 @@ namespace FlightManagementSystem
             Console.WriteLine("Ticket ID: " + ticketId);
             Console.WriteLine("Ticket added to cancelled list.");
         }
-        static void Main(string[] args)
+        public static void PassengerCheckIn()
+        {
+            bool back = false;
+
+            while (back == false)
+            {
+                Console.WriteLine("1. Check in a passenger");
+                Console.WriteLine("2. View check-in queue");
+                Console.WriteLine("3. Process next passenger");
+                Console.WriteLine("0. Back");
+
+                Console.WriteLine("Select option:");
+                int option;
+                bool enteroption = int.TryParse(Console.ReadLine(), out option);
+
+                if (enteroption == false)
+                {
+                    Console.WriteLine("Invalid option.");
+                    continue;
+                }
+
+                switch (option)
+                {
+                    case 1:
+                        Console.WriteLine("Enter ticket ID:");
+                        string ticketId = Console.ReadLine();
+
+                        int passengerIndex = -1;
+
+                        for (int i = 0; i < ticketNumbers.Count; i++)
+                        {
+                            if (ticketNumbers[i].ToLower() == ticketId.ToLower())
+                            {
+                                passengerIndex = i;
+                                ticketId = ticketNumbers[i];
+                            }
+                        }
+
+                        if (passengerIndex == -1)
+                        {
+                            Console.WriteLine("Ticket ID not found.");
+                            break;
+                        }
+
+                        if (cancelledTickets.Contains(ticketId))
+                        {
+                            Console.WriteLine("Cancelled ticket cannot check in.");
+                            break;
+                        }
+
+                        if (bookingRecord.ContainsKey(ticketId) == false)
+                        {
+                            Console.WriteLine("Passenger must have a booking before check-in.");
+                            break;
+                        }
+
+                        string passengerName = passengerNames[passengerIndex];
+
+                        if (checkedInQueue.Contains(passengerName))
+                        {
+                            Console.WriteLine("Passenger is already in the check-in queue.");
+                            break;
+                        }
+
+                        if (waitlistQueue.Contains(passengerName))
+                        {
+                            Console.WriteLine("Passenger is already in the waitlist.");
+                            break;
+                        }
+
+                        if (checkedInQueue.Count < 10)
+                        {
+                            checkedInQueue.Enqueue(passengerName);
+                            Console.WriteLine(passengerName + " added to check-in queue.");
+                        }
+                        else
+                        {
+                            waitlistQueue.Enqueue(passengerName);
+                            Console.WriteLine(passengerName + " placed on waitlist because queue is full.");
+                        }
+
+                        break;
+
+                    case 2:
+                        Console.WriteLine(" Current Check-In Queue ");
+
+                        if (checkedInQueue.Count == 0)
+                        {
+                            Console.WriteLine("Check-in queue is empty.");
+                        }
+                        else
+                        {
+                            int position = 1;
+
+                            foreach (string passenger in checkedInQueue)
+                            {
+                                Console.WriteLine("Position " + position + ": " + passenger);
+                                position++;
+                            }
+                        }
+
+                        Console.WriteLine("We have whait list with :" + waitlistQueue.Count + "persond");
+                        break;
+
+                    case 3:
+                        if (checkedInQueue.Count == 0)
+                        {
+                            Console.WriteLine("No passengers in check-in queue.");
+                            break;
+                        }
+
+                        string processedPassenger = checkedInQueue.Dequeue();
+
+                        Console.WriteLine("Processed passenger: " + processedPassenger);
+
+                        if (waitlistQueue.Count > 0)
+                        {
+                            string waitPassenger = waitlistQueue.Dequeue();
+                            checkedInQueue.Enqueue(waitPassenger);
+
+                            Console.WriteLine(waitPassenger + " moved from waitlist to check-in queue.");
+                        }
+
+                        break;
+
+                    case 0:
+                        back = true;
+                        break;
+                }
+            }
+        }
+
+                static void Main(string[] args)
         {
             bool exit = false;
 
@@ -482,6 +614,9 @@ namespace FlightManagementSystem
                         break;
                     case 6:
                         CancelTicket();
+                        break;
+                    case 7:
+                        PassengerCheckIn();
                         break;
 
                 }
