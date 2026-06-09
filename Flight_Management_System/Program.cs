@@ -697,6 +697,428 @@ namespace FlightManagementSystem
                 }
             }
         }
+        public static void GenerateFlightManifest()
+        {
+            Console.WriteLine("Generate Flight Manifest");
+
+            Console.WriteLine("Enter flight number:");
+            string flight = Console.ReadLine();
+
+            bool flightFound = false;
+
+            for (int i = 0; i < flightNumbers.Length; i++)
+            {
+                if (flightNumbers[i].ToLower() == flight.ToLower())
+                {
+                    flightFound = true;
+                    flight = flightNumbers[i];
+                }
+            }
+
+            if (flightFound == false)
+            {
+                Console.WriteLine("Invalid flight number.");
+                return;
+            }
+
+            List<string> manifestRecords = new List<string>();
+
+            foreach (KeyValuePair<string, string> booking in bookingRecord)
+            {
+                string ticketId = booking.Key;
+                string bookingValue = booking.Value;
+
+                string[] bookingParts = bookingValue.Split('|');
+
+                string bookedFlight = bookingParts[0];
+                string bookedDate = bookingParts[1];
+
+                if (bookedFlight.ToLower() == flight.ToLower())
+                {
+                    int passengerIndex = -1;
+
+                    for (int i = 0; i < ticketNumbers.Count; i++)
+                    {
+                        if (ticketNumbers[i] == ticketId)
+                        {
+                            passengerIndex = i;
+                        }
+                    }
+
+                    if (passengerIndex != -1)
+                    {
+                        string passengerName = passengerNames[passengerIndex];
+
+                        string seat = "—";
+
+                        if (passengerSeatMap.ContainsKey(passengerName))
+                        {
+                            seat = passengerSeatMap[passengerName];
+                        }
+
+                        string status = "Booked";
+
+                        if (passengerSeatMap.ContainsKey(passengerName))
+                        {
+                            status = "Boarded";
+                        }
+                        else if (checkedInQueue.Contains(passengerName))
+                        {
+                            status = "Checked-In";
+                        }
+                        else if (cancelledTickets.Contains(ticketId))
+                        {
+                            status = "Cancelled";
+                        }
+
+                        string record = passengerName + "|" + ticketId + "|" + bookedDate + "|" + seat + "|" + status;
+
+                        manifestRecords.Add(record);
+                    }
+                }
+            }
+
+            if (manifestRecords.Count == 0)
+            {
+                Console.WriteLine("No passengers booked on this flight.");
+                return;
+            }
+
+            for (int i = 0; i < manifestRecords.Count - 1; i++)
+            {
+                for (int j = 0; j < manifestRecords.Count - i - 1; j++)
+                {
+                    string[] firstParts = manifestRecords[j].Split('|');
+                    string[] secondParts = manifestRecords[j + 1].Split('|');
+
+                    string firstName = firstParts[0];
+                    string secondName = secondParts[0];
+
+                    if (firstName.CompareTo(secondName) > 0)
+                    {
+                        string temp = manifestRecords[j];
+                        manifestRecords[j] = manifestRecords[j + 1];
+                        manifestRecords[j + 1] = temp;
+                    }
+                }
+            }
+
+            Console.WriteLine("No. | Passenger Name | Ticket ID | Date | Seat | Status");
+
+            int boardedCount = 0;
+            int checkedInCount = 0;
+            int cancelledCount = 0;
+
+            for (int i = 0; i < manifestRecords.Count; i++)
+            {
+                string[] parts = manifestRecords[i].Split('|');
+
+                string passengerName = parts[0];
+                string ticketId = parts[1];
+                string date = parts[2];
+                string seat = parts[3];
+                string status = parts[4];
+
+                Console.WriteLine((i + 1) + ". " + passengerName + " | " + ticketId + " | " + date + " | " + seat + " | " + status);
+
+                if (status == "Boarded")
+                {
+                    boardedCount++;
+                }
+                else if (status == "Checked-In")
+                {
+                    checkedInCount++;
+                }
+                else if (status == "Cancelled")
+                {
+                    cancelledCount++;
+                }
+            }
+
+            Console.WriteLine("Manifest Summary");
+            Console.WriteLine("Total passengers on flight: " + manifestRecords.Count);
+            Console.WriteLine("Boarded: " + boardedCount);
+            Console.WriteLine("Checked-In: " + checkedInCount);
+            Console.WriteLine("Cancelled: " + cancelledCount);
+        }
+        public static void ManageWaitlistAndSeatAssignment()
+        {
+            bool back = false;
+
+            while (back == false)
+            {
+                Console.WriteLine("Manage Waitlist & Seat Assignment");
+                Console.WriteLine("1. View waitlist");
+                Console.WriteLine("2. Promote next waitlist passenger");
+                Console.WriteLine("3. Promote specific waitlist passenger");
+                Console.WriteLine("4. Reassign passenger seat");
+                Console.WriteLine("0. Back");
+
+                Console.WriteLine("Select option:");
+                int option;
+                bool optionResult = int.TryParse(Console.ReadLine(), out option);
+
+                if (optionResult == false)
+                {
+                    Console.WriteLine("Invalid option.");
+                    continue;
+                }
+
+                switch (option)
+                {
+                    case 1:
+                        Console.WriteLine("Waitlist Queue");
+
+                        if (waitlistQueue.Count == 0)
+                        {
+                            Console.WriteLine("Waitlist is empty.");
+                        }
+                        else
+                        {
+                            int position = 1;
+
+                            foreach (string passenger in waitlistQueue)
+                            {
+                                Console.WriteLine("Position " + position + ": " + passenger);
+                                position++;
+                            }
+                        }
+
+                        Console.WriteLine("Total waitlist count: " + waitlistQueue.Count);
+                        break;
+
+                    case 2:
+                        if (waitlistQueue.Count == 0)
+                        {
+                            Console.WriteLine("Waitlist is empty.");
+                            break;
+                        }
+
+                        string passengerName = waitlistQueue.Dequeue();
+
+                        int passengerIndex = -1;
+
+                        for (int i = 0; i < passengerNames.Count; i++)
+                        {
+                            if (passengerNames[i].ToLower() == passengerName.ToLower())
+                            {
+                                passengerIndex = i;
+                            }
+                        }
+
+                        if (passengerIndex == -1)
+                        {
+                            Console.WriteLine("Passenger does not have a valid ticket ID.");
+                            break;
+                        }
+
+                        string ticketId = ticketNumbers[passengerIndex];
+
+                        if (cancelledTickets.Contains(ticketId))
+                        {
+                            Console.WriteLine("Cancelled ticket cannot be promoted.");
+                            break;
+                        }
+
+                        Console.WriteLine("Available Flights");
+
+                        for (int i = 0; i < flightNumbers.Length; i++)
+                        {
+                            Console.WriteLine(i + ". " + flightNumbers[i]);
+                        }
+
+                        Console.WriteLine("Select flight index:");
+                        int flightIndex;
+                        bool flightResult = int.TryParse(Console.ReadLine(), out flightIndex);
+
+                        if (flightResult == false || flightIndex < 0 || flightIndex >= flightNumbers.Length)
+                        {
+                            Console.WriteLine("Invalid flight selection.");
+                            break;
+                        }
+
+                        Console.WriteLine("Available Dates");
+
+                        for (int i = 0; i < availableDates.Count; i++)
+                        {
+                            Console.WriteLine(i + ". " + availableDates[i]);
+                        }
+
+                        Console.WriteLine("Select date index:");
+                        int dateIndex;
+                        bool dateResult = int.TryParse(Console.ReadLine(), out dateIndex);
+
+                        if (dateResult == false || dateIndex < 0 || dateIndex >= availableDates.Count)
+                        {
+                            Console.WriteLine("Invalid date selection.");
+                            break;
+                        }
+
+                        string selectedFlight = flightNumbers[flightIndex];
+                        string selectedDate = availableDates[dateIndex];
+
+                        if (bookingRecord.ContainsKey(ticketId))
+                        {
+                            bookingRecord[ticketId] = selectedFlight + "|" + selectedDate;
+                        }
+                        else
+                        {
+                            bookingRecord.Add(ticketId, selectedFlight + "|" + selectedDate);
+                        }
+
+                        Console.WriteLine("Promotion Confirmation");
+                        Console.WriteLine("Passenger: " + passengerName);
+                        Console.WriteLine("Ticket ID: " + ticketId);
+                        Console.WriteLine("Flight: " + selectedFlight);
+                        Console.WriteLine("Date: " + selectedDate);
+                        break;
+
+                    case 3:
+                        Console.WriteLine("Enter passenger name:");
+                        string targetPassenger = Console.ReadLine();
+
+                        Queue<string> tempQueue = new Queue<string>();
+                        bool found = false;
+                        string selectedPassenger = "";
+
+                        while (waitlistQueue.Count > 0)
+                        {
+                            string passenger = waitlistQueue.Dequeue();
+
+                            if (passenger.ToLower() == targetPassenger.ToLower() && found == false)
+                            {
+                                found = true;
+                                selectedPassenger = passenger;
+                            }
+                            else
+                            {
+                                tempQueue.Enqueue(passenger);
+                            }
+                        }
+
+                        while (tempQueue.Count > 0)
+                        {
+                            waitlistQueue.Enqueue(tempQueue.Dequeue());
+                        }
+
+                        if (found == false)
+                        {
+                            Console.WriteLine("Passenger was not found in the waitlist.");
+                            break;
+                        }
+
+                        int selectedIndex = -1;
+
+                        for (int i = 0; i < passengerNames.Count; i++)
+                        {
+                            if (passengerNames[i].ToLower() == selectedPassenger.ToLower())
+                            {
+                                selectedIndex = i;
+                            }
+                        }
+
+                        if (selectedIndex == -1)
+                        {
+                            Console.WriteLine("Passenger does not have a valid ticket ID.");
+                            break;
+                        }
+
+                        string selectedTicket = ticketNumbers[selectedIndex];
+
+                        if (cancelledTickets.Contains(selectedTicket))
+                        {
+                            Console.WriteLine("Cancelled ticket cannot be promoted.");
+                            break;
+                        }
+
+                        Console.WriteLine("Available Flights");
+
+                        for (int i = 0; i < flightNumbers.Length; i++)
+                        {
+                            Console.WriteLine(i + ". " + flightNumbers[i]);
+                        }
+
+                        Console.WriteLine("Select flight index:");
+                        int selectedFlightIndex;
+                        bool selectedFlightResult = int.TryParse(Console.ReadLine(), out selectedFlightIndex);
+
+                        if (selectedFlightResult == false || selectedFlightIndex < 0 || selectedFlightIndex >= flightNumbers.Length)
+                        {
+                            Console.WriteLine("Invalid flight selection.");
+                            break;
+                        }
+
+                        Console.WriteLine("Available Dates");
+
+                        for (int i = 0; i < availableDates.Count; i++)
+                        {
+                            Console.WriteLine(i + ". " + availableDates[i]);
+                        }
+
+                        Console.WriteLine("Select date index:");
+                        int selectedDateIndex;
+                        bool selectedDateResult = int.TryParse(Console.ReadLine(), out selectedDateIndex);
+
+                        if (selectedDateResult == false || selectedDateIndex < 0 || selectedDateIndex >= availableDates.Count)
+                        {
+                            Console.WriteLine("Invalid date selection.");
+                            break;
+                        }
+
+                        string newFlight = flightNumbers[selectedFlightIndex];
+                        string newDate = availableDates[selectedDateIndex];
+
+                        if (bookingRecord.ContainsKey(selectedTicket))
+                        {
+                            bookingRecord[selectedTicket] = newFlight + "|" + newDate;
+                        }
+                        else
+                        {
+                            bookingRecord.Add(selectedTicket, newFlight + "|" + newDate);
+                        }
+
+                        Console.WriteLine("Promotion Confirmation");
+                        Console.WriteLine("Passenger: " + selectedPassenger);
+                        Console.WriteLine("Ticket ID: " + selectedTicket);
+                        Console.WriteLine("Flight: " + newFlight);
+                        Console.WriteLine("Date: " + newDate);
+                        break;
+
+                    case 4:
+                        Console.WriteLine("Enter passenger name:");
+                        string seatPassenger = Console.ReadLine();
+
+                        if (passengerSeatMap.ContainsKey(seatPassenger) == false)
+                        {
+                            Console.WriteLine("Passenger is not boarded, so seat cannot be reassigned.");
+                            break;
+                        }
+
+                        string oldSeat = passengerSeatMap[seatPassenger];
+
+                        Console.WriteLine("Enter new seat code:");
+                        string newSeat = Console.ReadLine();
+
+                        if (newSeat == "")
+                        {
+                            Console.WriteLine("Seat code cannot be empty.");
+                            break;
+                        }
+
+                        passengerSeatMap[seatPassenger] = newSeat;
+
+                        Console.WriteLine("Seat Reassignment Confirmation");
+                        Console.WriteLine("Passenger: " + seatPassenger);
+                        Console.WriteLine("Old Seat: " + oldSeat);
+                        Console.WriteLine("New Seat: " + newSeat);
+                        break;
+
+                    case 0:
+                        back = true;
+                        break;
+                }
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -746,7 +1168,12 @@ namespace FlightManagementSystem
                     case 8:
                         BoardPassengers();
                         break;
-
+                    case 9:
+                        GenerateFlightManifest();
+                        break;
+                    case 10:
+                        ManageWaitlistAndSeatAssignment();
+                        break;
                 }
             }
         }
