@@ -444,6 +444,13 @@ namespace FlightManagementSystem
                 RemovePassengerFromQueue(checkedInQueue, passengerName);
             }
 
+            if (waitlistQueue.Contains(passengerName))
+            {
+                RemovePassengerFromQueue(waitlistQueue, passengerName);
+            } //if a passenger is already in the waitlist and then i cancel the ticket,
+              //i should remove them from the waitlist too
+              // so here it will remove passenger from checkedInQueue,waitlistQueue and boardingStack
+
 
             if (boardingStack.Contains(passengerName))
             {
@@ -881,7 +888,7 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        string passengerName = waitlistQueue.Dequeue();
+                        string passengerName = waitlistQueue.Peek(); //i change from dequeue to peek
 
                         int passengerIndex = FindPassengerIndexByName(passengerName);
 
@@ -914,6 +921,8 @@ namespace FlightManagementSystem
                         }
 
                         SaveBooking(ticketId, selectedFlight, selectedDate);
+                        waitlistQueue.Dequeue(); //also i add this (i do this so passenger will be removed from
+                                                 //the waitlist only after flight and date are selected correctly)
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + passengerName);
@@ -926,29 +935,18 @@ namespace FlightManagementSystem
                         Console.WriteLine("Enter passenger name:");
                         string targetPassenger = Console.ReadLine();
 
-                        Queue<string> tempQueue = new Queue<string>();
                         bool found = false;
                         string selectedPassenger = "";
 
-                        while (waitlistQueue.Count > 0)
+                        foreach (string passenger in waitlistQueue)
                         {
-                            string passenger = waitlistQueue.Dequeue();
-
-                            if (passenger.ToLower() == targetPassenger.ToLower() && found == false)
+                            if (passenger.ToLower() == targetPassenger.ToLower())
                             {
                                 found = true;
                                 selectedPassenger = passenger;
+                                break;
                             }
-                            else
-                            {
-                                tempQueue.Enqueue(passenger);
-                            }
-                        }
-
-                        while (tempQueue.Count > 0)
-                        {
-                            waitlistQueue.Enqueue(tempQueue.Dequeue());
-                        }
+                        } // here i change so it will search without removing anyone from the waitlist
 
                         if (found == false)
                         {
@@ -987,6 +985,8 @@ namespace FlightManagementSystem
                         }
 
                         SaveBooking(selectedTicket, newFlight, newDate);
+                        RemovePassengerFromQueue(waitlistQueue, selectedPassenger); // here the specific passenger will be removed
+                                                                                    // from the waitlist only after booking is successful.
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + selectedPassenger);
