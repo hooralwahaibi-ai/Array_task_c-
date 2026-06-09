@@ -256,11 +256,15 @@ namespace TS_DS_01
 
             Array.Sort(sortedSeverity);
 
-            int position1 = (sortedSeverity.Length/2);
-            int position2 = (sortedSeverity.Length / 2) - 1;
-            double firstNum = sortedSeverity[position1];
-            double secondNum = sortedSeverity[position2];
-            double median = (firstNum + secondNum) / 2.0;
+            //int position1 = (sortedSeverity.Length/2);
+            //int position2 = (sortedSeverity.Length / 2) - 1;
+            //double firstNum = sortedSeverity[position1];
+            //double secondNum = sortedSeverity[position2];
+            //double median = (firstNum + secondNum) / 2.0;
+
+            //alternative way for calculate median
+            //
+            double median = (sortedSeverity[sortedSeverity.Length / 2]+ sortedSeverity[(sortedSeverity.Length / 2) - 1])/ 2.0;
             Console.WriteLine("the meaian is:" + median);
             Array.Reverse(sortedSeverity);
 

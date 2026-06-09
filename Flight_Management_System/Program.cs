@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace FlightManagementSystem
 {
@@ -571,9 +572,133 @@ namespace FlightManagementSystem
                         break;
                 }
             }
+
+        }
+        public static void BoardPassengers()
+        {
+            bool back = false;
+
+            while (back == false)
+            {
+                Console.WriteLine("Board Passengers");
+                Console.WriteLine("1. Load boarding stack from check-in queue");
+                Console.WriteLine("2. Board next passenger");
+                Console.WriteLine("3. View boarding stack");
+                Console.WriteLine("4. View boarding log");
+                Console.WriteLine("0. Back");
+
+                Console.WriteLine("Select option:");
+                int option;
+                bool optionResult = int.TryParse(Console.ReadLine(), out option);
+
+                if (optionResult == false)
+                {
+                    Console.WriteLine("Invalid option");
+                    continue;
+                }
+
+                switch (option)
+                {
+                    case 1:
+                        if (checkedInQueue.Count == 0 && boardingStack.Count > 0)
+                        {
+                            Console.WriteLine("Boarding stack is already loaded");
+                            break;
+                        }
+
+                        if (checkedInQueue.Count == 0)
+                        {
+                            Console.WriteLine("No checked-in passengers to load");
+                            break;
+                        }
+
+                        int count = 0;
+
+                        while (checkedInQueue.Count > 0)
+                        {
+                            string passenger = checkedInQueue.Dequeue();
+                            boardingStack.Push(passenger);
+                            count++;
+                        }
+
+                        Console.WriteLine("Loaded passengers to boarding stack: " + count);
+                        break;
+
+                    case 2:
+                        if (boardingStack.Count == 0)
+                        {
+                            Console.WriteLine("Boarding stack is empty");
+                            break;
+                        }
+
+                        string boardedPassenger = boardingStack.Pop();
+
+                        string seat = seatRow + seatLetter.ToString();
+
+                        seatLetter++;
+
+                        if (seatLetter > 'F')
+                        {
+                            seatLetter = 'A';
+                            seatRow++;
+                        }
+
+                        if (passengerSeatMap.ContainsKey(boardedPassenger))
+                        {
+                            passengerSeatMap[boardedPassenger] = seat;
+                        }
+                        else
+                        {
+                            passengerSeatMap.Add(boardedPassenger, seat);
+                        }
+
+                        Console.WriteLine("Passenger boarded: " + boardedPassenger);
+                        Console.WriteLine("Assigned seat: " + seat);
+                        break;
+
+                    case 3:
+                        Console.WriteLine("Boarding Stack");
+
+                        if (boardingStack.Count == 0)
+                        {
+                            Console.WriteLine("Boarding stack is empty");
+                            break;
+                        }
+
+                        int position = 1;
+
+                        foreach (string passenger in boardingStack)
+                        {
+                            Console.WriteLine("Position " + position + ": " + passenger);
+                            position++;
+                        }
+
+                        break;
+
+                    case 4:
+                        Console.WriteLine("Boarding Log ");
+
+                        if (passengerSeatMap.Count == 0)
+                        {
+                            Console.WriteLine("No passengers boarded yet.");
+                            break;
+                        }
+
+                        foreach (KeyValuePair<string, string> passenger in passengerSeatMap)
+                        {
+                            Console.WriteLine(passenger.Key + " | Seat: " + passenger.Value);
+                        }
+
+                        break;
+
+                    case 0:
+                        back = true;
+                        break;
+                }
+            }
         }
 
-                static void Main(string[] args)
+        static void Main(string[] args)
         {
             bool exit = false;
 
@@ -617,6 +742,9 @@ namespace FlightManagementSystem
                         break;
                     case 7:
                         PassengerCheckIn();
+                        break;
+                    case 8:
+                        BoardPassengers();
                         break;
 
                 }
