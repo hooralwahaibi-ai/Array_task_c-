@@ -7,7 +7,7 @@ namespace FlightManagementSystem
     internal class Program
     {
         static List<string> passengerNames = new List<string>()
-        {"Hoor Khalifa","Bayan Khalifa","Fatma Yousif" };
+        {"Hoor Khalifa","Bayan Khalifa","Fatma Yousif","Khalifa salim"};
 
         static List<string> ticketNumbers = new List<string>()
         {"TKT-001","TKT-002","TKT-003","TKT-004" };
@@ -33,6 +33,157 @@ namespace FlightManagementSystem
         static int seatRow = 10;
         static char seatLetter = 'A';
 
+        public static int FindTicketIndex(string ticketId)
+        {
+            for (int i = 0; i < ticketNumbers.Count; i++)
+            {
+                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+        public static int FindPassengerIndexByName(string passengerName)
+        {
+            for (int i = 0; i < passengerNames.Count; i++)
+            {
+                if (passengerNames[i].ToLower() == passengerName.ToLower())
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+        public static int ReadNumber(string message)
+        {
+            Console.WriteLine(message);
+
+            int number;
+            bool result = int.TryParse(Console.ReadLine(), out number);
+
+            if (result == false)
+            {
+                return -1;
+            }
+
+            return number;
+        }
+        public static void RemovePassengerFromQueue(Queue<string> queue, string passengerName)
+        {
+            Queue<string> tempQueue = new Queue<string>();
+
+            while (queue.Count > 0)
+            {
+                string name = queue.Dequeue();
+
+                if (name == passengerName)
+                {
+                    Console.WriteLine("removed from queue");
+                }
+                else
+                {
+                    tempQueue.Enqueue(name);
+                }
+            }
+
+            while (tempQueue.Count > 0)
+            {
+                queue.Enqueue(tempQueue.Dequeue());
+            }
+        }
+        public static void RemovePassengerFromStack(Stack<string> stack, string passengerName)
+        {
+            Stack<string> tempStack = new Stack<string>();
+
+            while (stack.Count > 0)
+            {
+                string name = stack.Pop();
+
+                if (name == passengerName)
+                {
+                    Console.WriteLine("removed from boarding stack");
+                }
+                else
+                {
+                    tempStack.Push(name);
+                }
+            }
+
+            while (tempStack.Count > 0)
+            {
+                stack.Push(tempStack.Pop());
+            }
+        }
+
+        public static bool GetTicketInfo(out int passengerIndex, out string ticketId, string errorMessage)
+        {
+            Console.WriteLine("Enter ticket ID:");
+            ticketId = Console.ReadLine();
+
+            passengerIndex = FindTicketIndex(ticketId);
+
+            if (passengerIndex == -1)
+            {
+                Console.WriteLine(errorMessage);
+                return false;
+            }
+
+            ticketId = ticketNumbers[passengerIndex];
+            return true;
+        }
+        public static string SelectFlight()
+        {
+            Console.WriteLine("Available Flights");
+
+            for (int i = 0; i < flightNumbers.Length; i++)
+            {
+                Console.WriteLine(i + ". " + flightNumbers[i]);
+            }
+
+            int flightIndex = ReadNumber("Select flight index:");
+
+            if (flightIndex < 0 || flightIndex >= flightNumbers.Length)
+            {
+                Console.WriteLine("Invalid flight selection.");
+                return "";
+            }
+
+            return flightNumbers[flightIndex];
+        }
+        public static string SelectDate()
+        {
+            Console.WriteLine("Available Dates");
+
+            for (int i = 0; i < availableDates.Count; i++)
+            {
+                Console.WriteLine(i + ". " + availableDates[i]);
+            }
+
+            int dateIndex = ReadNumber("Select date index:");
+
+            if (dateIndex < 0 || dateIndex >= availableDates.Count)
+            {
+                Console.WriteLine("Invalid date selection.");
+                return "";
+            }
+
+            return availableDates[dateIndex];
+        }
+        public static void SaveBooking(string ticketId, string flight, string date)
+        {
+            if (bookingRecord.ContainsKey(ticketId))
+            {
+                bookingRecord[ticketId] = flight + "|" + date;
+            }
+            else
+            {
+                bookingRecord.Add(ticketId, flight + "|" + date);
+            }
+        }
+
         public static void RegisterNewPassenger()
         {
             Console.WriteLine("Enter passenger full name:");
@@ -44,13 +195,10 @@ namespace FlightManagementSystem
                 return;
             }
 
-            for (int i = 0; i < passengerNames.Count; i++)
+            if (FindPassengerIndexByName(name) != -1)
             {
-                if (passengerNames[i] == name)
-                {
-                    Console.WriteLine("Error: passenger already exists");
-                    return;
-                }
+                Console.WriteLine("Error: passenger already exists");
+                return;
             }
 
             string ticketId = "TKT-" + (passengerNames.Count + 1).ToString("D3");
@@ -91,23 +239,11 @@ namespace FlightManagementSystem
         {
             Console.WriteLine("Book a Flight Ticket");
 
-            Console.WriteLine("Enter ticket ID:");
-            string ticketId = Console.ReadLine();
+            int passengerIndex;
+            string ticketId;
 
-            int passengerIndex = -1;
-
-            for (int i = 0; i < ticketNumbers.Count; i++)
+            if (GetTicketInfo(out passengerIndex, out ticketId, "Error: ticket ID not found.") == false)
             {
-                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                {
-                    passengerIndex = i;
-                    ticketId = ticketNumbers[i];
-                }
-            }
-
-            if (passengerIndex == -1)
-            {
-                Console.WriteLine("Error: ticket ID not found.");
                 return;
             }
 
@@ -123,44 +259,21 @@ namespace FlightManagementSystem
                 return;
             }
 
-            Console.WriteLine("Available Flights");
+            string selectedFlight = SelectFlight();
 
-            for (int i = 0; i < flightNumbers.Length; i++)
+            if (selectedFlight == "")
             {
-                Console.WriteLine(i + ": "+ flightNumbers[i]);
-            }
-
-            Console.WriteLine("Select flight index:");
-            int flightIndex;
-            bool flightResult = int.TryParse(Console.ReadLine(), out flightIndex);
-
-            if (flightResult == false|| flightIndex >= flightNumbers.Length)
-            {
-                Console.WriteLine("Invalid flight selection");
                 return;
             }
 
-            Console.WriteLine(" Available Dates ");
+            string selectedDate = SelectDate();
 
-            for (int i = 0; i < availableDates.Count; i++)
+            if (selectedDate == "")
             {
-                Console.WriteLine(i + ". " + availableDates[i]);
-            }
-
-            Console.WriteLine("Select date index:");
-            int dateIndex;
-            bool dateResult = int.TryParse(Console.ReadLine(), out dateIndex);
-
-            if (dateResult == false || dateIndex >= availableDates.Count)
-            {
-                Console.WriteLine("Invalid date selection.");
                 return;
             }
 
-            string selectedFlight = flightNumbers[flightIndex];
-            string selectedDate = availableDates[dateIndex];
-
-            bookingRecord.Add(ticketId, selectedFlight + "& "+selectedDate);
+            SaveBooking(ticketId, selectedFlight, selectedDate);
 
             Console.WriteLine("Passenger Name: " + passengerNames[passengerIndex]);
             Console.WriteLine("Ticket ID: " + ticketId);
@@ -171,23 +284,11 @@ namespace FlightManagementSystem
         {
             Console.WriteLine("View Booking Details");
 
-            Console.WriteLine("Enter ticket ID:");
-            string ticketId = Console.ReadLine();
+            int passengerIndex;
+            string ticketId;
 
-            int passengerIndex = -1;
-
-            for (int i = 0; i < ticketNumbers.Count; i++)
+            if (GetTicketInfo(out passengerIndex, out ticketId, "Error: ticket ID not found.") == false)
             {
-                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                {
-                    passengerIndex = i;
-                    ticketId = ticketNumbers[i];
-                }
-            }
-
-            if (passengerIndex == -1)
-            {
-                Console.WriteLine("Error: ticket ID not found.");
                 return;
             }
 
@@ -219,23 +320,11 @@ namespace FlightManagementSystem
         {
             Console.WriteLine(" Update a Booking ");
 
-            Console.WriteLine("Enter ticket ID:");
-            string ticketId = Console.ReadLine();
+            int passengerIndex;
+            string ticketId;
 
-            int passengerIndex = -1;
-
-            for (int i = 0; i < ticketNumbers.Count; i++)
+            if (GetTicketInfo(out passengerIndex, out ticketId, "Error: ticket ID not found.") == false)
             {
-                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                {
-                    passengerIndex = i;
-                    ticketId = ticketNumbers[i];
-                }
-            }
-
-            if (passengerIndex == -1)
-            {
-                Console.WriteLine("Error: ticket ID not found.");
                 return;
             }
 
@@ -268,11 +357,9 @@ namespace FlightManagementSystem
             Console.WriteLine("3. Change both");
             Console.WriteLine("0. Cancel update");
 
-            Console.WriteLine("Select option:");
-            int option;
-            bool enteroption = int.TryParse(Console.ReadLine(), out option);
+            int option = ReadNumber("Select option:");
 
-            if (enteroption == false)
+            if (option == -1)
             {
                 Console.WriteLine("Invalid option.");
                 return;
@@ -292,49 +379,25 @@ namespace FlightManagementSystem
 
             if (option == 1 || option == 3)
             {
-                Console.WriteLine(" Available Flights ");
+                newFlight = SelectFlight();
 
-                for (int i = 0; i < flightNumbers.Length; i++)
+                if (newFlight == "")
                 {
-                    Console.WriteLine(i + "." + flightNumbers[i]);
-                }
-
-                Console.WriteLine("Select new flight index:");
-                int flightIndex;
-                bool flightResult = int.TryParse(Console.ReadLine(), out flightIndex);
-
-                if (flightResult == false || flightIndex >= flightNumbers.Length)
-                {
-                    Console.WriteLine("Invalid flight selection.");
                     return;
                 }
-
-                newFlight = flightNumbers[flightIndex];
             }
 
             if (option == 2 || option == 3)
             {
-                Console.WriteLine(" Available Dates ");
+                newDate = SelectDate();
 
-                for (int i = 0; i < availableDates.Count; i++)
+                if (newDate == "")
                 {
-                    Console.WriteLine(i + ". " + availableDates[i]);
-                }
-
-                Console.WriteLine("Select new date index:");
-                int dateIndex;
-                bool dateResult = int.TryParse(Console.ReadLine(), out dateIndex);
-
-                if (dateResult == false || dateIndex >= availableDates.Count)
-                {
-                    Console.WriteLine("Invalid date selection.");
                     return;
                 }
-
-                newDate = availableDates[dateIndex];
             }
 
-            bookingRecord[ticketId] = newFlight + "|" + newDate;
+            SaveBooking(ticketId, newFlight, newDate);
 
             Console.WriteLine(" New Update");
             Console.WriteLine("Passenger: " + passengerNames[passengerIndex]);
@@ -345,23 +408,11 @@ namespace FlightManagementSystem
         {
             Console.WriteLine(" Cancel a Ticket ");
 
-            Console.WriteLine("Enter ticket ID:");
-            string ticketId = Console.ReadLine();
+            int passengerIndex;
+            string ticketId;
 
-            int passengerIndex = -1;
-
-            for (int i = 0; i < ticketNumbers.Count; i++)
+            if (GetTicketInfo(out passengerIndex, out ticketId, "Error: ticket ID not found.") == false)
             {
-                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                {
-                    passengerIndex = i;
-                    ticketId = ticketNumbers[i];
-                }
-            }
-
-            if (passengerIndex == -1)
-            {
-                Console.WriteLine("Error: ticket ID not found.");
                 return;
             }
 
@@ -390,51 +441,13 @@ namespace FlightManagementSystem
 
             if (checkedInQueue.Contains(passengerName))
             {
-                Queue<string> tempQueue = new Queue<string>();
-
-                while (checkedInQueue.Count > 0)
-                {
-                    string name = checkedInQueue.Dequeue();
-
-                    if (name == passengerName)
-                    {
-                        Console.WriteLine("removed from queue");
-                    }
-                    else
-                    {
-                        tempQueue.Enqueue(name);
-                    }
-                }
-
-                while (tempQueue.Count > 0)
-                {
-                    checkedInQueue.Enqueue(tempQueue.Dequeue());
-                }
+                RemovePassengerFromQueue(checkedInQueue, passengerName);
             }
 
 
             if (boardingStack.Contains(passengerName))
             {
-                Stack<string> tempStack = new Stack<string>();
-
-                while (boardingStack.Count > 0)
-                {
-                    string name = boardingStack.Pop();
-
-                    if (name == passengerName)
-                    {
-                        Console.WriteLine("removed from boarding stack");
-                    }
-                    else
-                    {
-                        tempStack.Push(name);
-                    }
-                }
-
-                while (tempStack.Count > 0)
-                {
-                    boardingStack.Push(tempStack.Pop());
-                }
+                RemovePassengerFromStack(boardingStack, passengerName);
             }
 
             Console.WriteLine(" Cancellation Summary ");
@@ -453,11 +466,9 @@ namespace FlightManagementSystem
                 Console.WriteLine("3. Process next passenger");
                 Console.WriteLine("0. Back");
 
-                Console.WriteLine("Select option:");
-                int option;
-                bool enteroption = int.TryParse(Console.ReadLine(), out option);
+                int option = ReadNumber("Select option:");
 
-                if (enteroption == false)
+                if (option == -1)
                 {
                     Console.WriteLine("Invalid option.");
                     continue;
@@ -466,23 +477,11 @@ namespace FlightManagementSystem
                 switch (option)
                 {
                     case 1:
-                        Console.WriteLine("Enter ticket ID:");
-                        string ticketId = Console.ReadLine();
+                        int passengerIndex;
+                        string ticketId;
 
-                        int passengerIndex = -1;
-
-                        for (int i = 0; i < ticketNumbers.Count; i++)
+                        if (GetTicketInfo(out passengerIndex, out ticketId, "Ticket ID not found.") == false)
                         {
-                            if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                            {
-                                passengerIndex = i;
-                                ticketId = ticketNumbers[i];
-                            }
-                        }
-
-                        if (passengerIndex == -1)
-                        {
-                            Console.WriteLine("Ticket ID not found.");
                             break;
                         }
 
@@ -587,11 +586,9 @@ namespace FlightManagementSystem
                 Console.WriteLine("4. View boarding log");
                 Console.WriteLine("0. Back");
 
-                Console.WriteLine("Select option:");
-                int option;
-                bool optionResult = int.TryParse(Console.ReadLine(), out option);
+                int option = ReadNumber("Select option:");
 
-                if (optionResult == false)
+                if (option == -1)
                 {
                     Console.WriteLine("Invalid option");
                     continue;
@@ -735,15 +732,7 @@ namespace FlightManagementSystem
 
                 if (bookedFlight.ToLower() == flight.ToLower())
                 {
-                    int passengerIndex = -1;
-
-                    for (int i = 0; i < ticketNumbers.Count; i++)
-                    {
-                        if (ticketNumbers[i] == ticketId)
-                        {
-                            passengerIndex = i;
-                        }
-                    }
+                    int passengerIndex = FindTicketIndex(ticketId);
 
                     if (passengerIndex != -1)
                     {
@@ -854,11 +843,9 @@ namespace FlightManagementSystem
                 Console.WriteLine("4. Reassign passenger seat");
                 Console.WriteLine("0. Back");
 
-                Console.WriteLine("Select option:");
-                int option;
-                bool optionResult = int.TryParse(Console.ReadLine(), out option);
+                int option = ReadNumber("Select option:");
 
-                if (optionResult == false)
+                if (option == -1)
                 {
                     Console.WriteLine("Invalid option.");
                     continue;
@@ -896,15 +883,7 @@ namespace FlightManagementSystem
 
                         string passengerName = waitlistQueue.Dequeue();
 
-                        int passengerIndex = -1;
-
-                        for (int i = 0; i < passengerNames.Count; i++)
-                        {
-                            if (passengerNames[i].ToLower() == passengerName.ToLower())
-                            {
-                                passengerIndex = i;
-                            }
-                        }
+                        int passengerIndex = FindPassengerIndexByName(passengerName);
 
                         if (passengerIndex == -1)
                         {
@@ -920,51 +899,21 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        Console.WriteLine("Available Flights");
+                        string selectedFlight = SelectFlight();
 
-                        for (int i = 0; i < flightNumbers.Length; i++)
+                        if (selectedFlight == "")
                         {
-                            Console.WriteLine(i + ". " + flightNumbers[i]);
-                        }
-
-                        Console.WriteLine("Select flight index:");
-                        int flightIndex;
-                        bool flightResult = int.TryParse(Console.ReadLine(), out flightIndex);
-
-                        if (flightResult == false || flightIndex < 0 || flightIndex >= flightNumbers.Length)
-                        {
-                            Console.WriteLine("Invalid flight selection.");
                             break;
                         }
 
-                        Console.WriteLine("Available Dates");
+                        string selectedDate = SelectDate();
 
-                        for (int i = 0; i < availableDates.Count; i++)
+                        if (selectedDate == "")
                         {
-                            Console.WriteLine(i + ". " + availableDates[i]);
-                        }
-
-                        Console.WriteLine("Select date index:");
-                        int dateIndex;
-                        bool dateResult = int.TryParse(Console.ReadLine(), out dateIndex);
-
-                        if (dateResult == false || dateIndex < 0 || dateIndex >= availableDates.Count)
-                        {
-                            Console.WriteLine("Invalid date selection.");
                             break;
                         }
 
-                        string selectedFlight = flightNumbers[flightIndex];
-                        string selectedDate = availableDates[dateIndex];
-
-                        if (bookingRecord.ContainsKey(ticketId))
-                        {
-                            bookingRecord[ticketId] = selectedFlight + "|" + selectedDate;
-                        }
-                        else
-                        {
-                            bookingRecord.Add(ticketId, selectedFlight + "|" + selectedDate);
-                        }
+                        SaveBooking(ticketId, selectedFlight, selectedDate);
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + passengerName);
@@ -1007,15 +956,7 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        int selectedIndex = -1;
-
-                        for (int i = 0; i < passengerNames.Count; i++)
-                        {
-                            if (passengerNames[i].ToLower() == selectedPassenger.ToLower())
-                            {
-                                selectedIndex = i;
-                            }
-                        }
+                        int selectedIndex = FindPassengerIndexByName(selectedPassenger);
 
                         if (selectedIndex == -1)
                         {
@@ -1031,51 +972,21 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        Console.WriteLine("Available Flights");
+                        string newFlight = SelectFlight();
 
-                        for (int i = 0; i < flightNumbers.Length; i++)
+                        if (newFlight == "")
                         {
-                            Console.WriteLine(i + ". " + flightNumbers[i]);
-                        }
-
-                        Console.WriteLine("Select flight index:");
-                        int selectedFlightIndex;
-                        bool selectedFlightResult = int.TryParse(Console.ReadLine(), out selectedFlightIndex);
-
-                        if (selectedFlightResult == false || selectedFlightIndex < 0 || selectedFlightIndex >= flightNumbers.Length)
-                        {
-                            Console.WriteLine("Invalid flight selection.");
                             break;
                         }
 
-                        Console.WriteLine("Available Dates");
+                        string newDate = SelectDate();
 
-                        for (int i = 0; i < availableDates.Count; i++)
+                        if (newDate == "")
                         {
-                            Console.WriteLine(i + ". " + availableDates[i]);
-                        }
-
-                        Console.WriteLine("Select date index:");
-                        int selectedDateIndex;
-                        bool selectedDateResult = int.TryParse(Console.ReadLine(), out selectedDateIndex);
-
-                        if (selectedDateResult == false || selectedDateIndex < 0 || selectedDateIndex >= availableDates.Count)
-                        {
-                            Console.WriteLine("Invalid date selection.");
                             break;
                         }
 
-                        string newFlight = flightNumbers[selectedFlightIndex];
-                        string newDate = availableDates[selectedDateIndex];
-
-                        if (bookingRecord.ContainsKey(selectedTicket))
-                        {
-                            bookingRecord[selectedTicket] = newFlight + "|" + newDate;
-                        }
-                        else
-                        {
-                            bookingRecord.Add(selectedTicket, newFlight + "|" + newDate);
-                        }
+                        SaveBooking(selectedTicket, newFlight, newDate);
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + selectedPassenger);
@@ -1138,9 +1049,15 @@ namespace FlightManagementSystem
                 Console.WriteLine("8. Board Passengers");
                 Console.WriteLine("9. Generate Flight Manifest");
                 Console.WriteLine("10. Manage Waitlist & Seat Assignment");
+                Console.WriteLine("0. Exit");
 
-                Console.WriteLine("Please select an option from the menu:");
-                int option = int.Parse(Console.ReadLine());
+                int option = ReadNumber("Please select an option from the menu:");
+
+                if (option == -1)
+                {
+                    Console.WriteLine("Invalid option.");
+                    continue;
+                }
 
                 switch (option)
                 {
@@ -1173,6 +1090,9 @@ namespace FlightManagementSystem
                         break;
                     case 10:
                         ManageWaitlistAndSeatAssignment();
+                        break;
+                    case 0:
+                        exit = true;
                         break;
                 }
             }
