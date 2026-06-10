@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace FlightManagementSystem
 {
@@ -33,29 +34,32 @@ namespace FlightManagementSystem
         static int seatRow = 10;
         static char seatLetter = 'A';
 
+
         public static int FindTicketIndex(string ticketId)
         {
-            for (int i = 0; i < ticketNumbers.Count; i++)
+            var ticket = ticketNumbers
+                .Select((ticket, index) => new { Ticket = ticket, Index = index })
+                .FirstOrDefault(t => t.Ticket.Equals(ticketId, StringComparison.OrdinalIgnoreCase));
+
+            if (ticket == null)
             {
-                if (ticketNumbers[i].ToLower() == ticketId.ToLower())
-                {
-                    return i;
-                }
+                return -1;
             }
 
-            return -1;
+            return ticket.Index;
         }
         public static int FindPassengerIndexByName(string passengerName)
         {
-            for (int i = 0; i < passengerNames.Count; i++)
+            var passenger = passengerNames
+                .Select((name, index) => new { Name = name, Index = index })
+                .FirstOrDefault(p => p.Name.Equals(passengerName, StringComparison.OrdinalIgnoreCase));
+
+            if (passenger == null)
             {
-                if (passengerNames[i].ToLower() == passengerName.ToLower())
-                {
-                    return i;
-                }
+                return -1;
             }
 
-            return -1;
+            return passenger.Index;
         }
         public static int ReadNumber(string message)
         {
@@ -73,48 +77,43 @@ namespace FlightManagementSystem
         }
         public static void RemovePassengerFromQueue(Queue<string> queue, string passengerName)
         {
-            Queue<string> tempQueue = new Queue<string>();
+            int oldCount = queue.Count;
 
-            while (queue.Count > 0)
+            List<string> remainingPassengers = queue
+                .Where(name => name.Equals(passengerName, StringComparison.OrdinalIgnoreCase) == false)
+                .ToList();
+
+            queue.Clear();
+
+            foreach (string passenger in remainingPassengers)
             {
-                string name = queue.Dequeue();
-
-                if (name == passengerName)
-                {
-                    Console.WriteLine("removed from queue");
-                }
-                else
-                {
-                    tempQueue.Enqueue(name);
-                }
+                queue.Enqueue(passenger);
             }
 
-            while (tempQueue.Count > 0)
+            if (queue.Count < oldCount)
             {
-                queue.Enqueue(tempQueue.Dequeue());
+                Console.WriteLine("removed from queue");
             }
         }
         public static void RemovePassengerFromStack(Stack<string> stack, string passengerName)
         {
-            Stack<string> tempStack = new Stack<string>();
+            int oldCount = stack.Count;
 
-            while (stack.Count > 0)
+            List<string> remainingPassengers = stack
+                .Where(name => name.Equals(passengerName, StringComparison.OrdinalIgnoreCase) == false)
+                .Reverse()
+                .ToList();
+
+            stack.Clear();
+
+            foreach (string passenger in remainingPassengers)
             {
-                string name = stack.Pop();
-
-                if (name == passengerName)
-                {
-                    Console.WriteLine("removed from boarding stack");
-                }
-                else
-                {
-                    tempStack.Push(name);
-                }
+                stack.Push(passenger);
             }
 
-            while (tempStack.Count > 0)
+            if (stack.Count < oldCount)
             {
-                stack.Push(tempStack.Pop());
+                Console.WriteLine("removed from boarding stack");
             }
         }
 
@@ -138,9 +137,13 @@ namespace FlightManagementSystem
         {
             Console.WriteLine("Available Flights");
 
-            for (int i = 0; i < flightNumbers.Length; i++)
+            var flightList = flightNumbers
+                .Select((flight, index) => index + ". " + flight)
+                .ToList();
+
+            foreach (string flight in flightList)
             {
-                Console.WriteLine(i + ". " + flightNumbers[i]);
+                Console.WriteLine(flight);
             }
 
             int flightIndex = ReadNumber("Select flight index:");
@@ -157,9 +160,13 @@ namespace FlightManagementSystem
         {
             Console.WriteLine("Available Dates");
 
-            for (int i = 0; i < availableDates.Count; i++)
+            var dateList = availableDates
+               .Select((date, index) => index + ". " + date)
+               .ToList();
+
+            foreach (string date in dateList)
             {
-                Console.WriteLine(i + ". " + availableDates[i]);
+                Console.WriteLine(date);
             }
 
             int dateIndex = ReadNumber("Select date index:");
@@ -184,6 +191,21 @@ namespace FlightManagementSystem
             }
         }
 
+        public static string GenerateSeat()
+        {
+            string seat = seatRow + seatLetter.ToString();
+
+            seatLetter++;
+
+            if (seatLetter > 'F')
+            {
+                seatLetter = 'A';
+                seatRow++;
+            }
+
+            return seat;
+        }
+
         public static void RegisterNewPassenger()
         {
             Console.WriteLine("Enter passenger full name:");
@@ -195,7 +217,10 @@ namespace FlightManagementSystem
                 return;
             }
 
-            if (FindPassengerIndexByName(name) != -1)
+            bool passengerExists = passengerNames
+                .Any(passenger => passenger.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+            if (passengerExists)
             {
                 Console.WriteLine("Error: passenger already exists");
                 return;
@@ -221,16 +246,19 @@ namespace FlightManagementSystem
             }
 
 
-            for (int i = 0; i < passengerNames.Count; i++)
-            {
-                string status = "Active";
-
-                if (cancelledTickets.Contains(ticketNumbers[i]))
+            var passengers = passengerNames
+                .Select((name, index) => new
                 {
-                    status = "CANCELLED";
-                }
+                    Number = index + 1,
+                    Name = name,
+                    Ticket = ticketNumbers[index],
+                    Status = cancelledTickets.Contains(ticketNumbers[index]) ? "CANCELLED" : "Active"
+                })
+                .ToList();
 
-                Console.WriteLine((i + 1) + ". " + passengerNames[i] + " | " + ticketNumbers[i] + " | " + status);
+            foreach (var passenger in passengers)
+            {
+                Console.WriteLine(passenger.Number + ". " + passenger.Name + " | " + passenger.Ticket + " | " + passenger.Status);
             }
 
             Console.WriteLine("total passengers: " + passengerNames.Count);
@@ -540,12 +568,13 @@ namespace FlightManagementSystem
                         }
                         else
                         {
-                            int position = 1;
+                            var queueList = checkedInQueue
+                                .Select((passenger, index) => "Position " + (index + 1) + ": " + passenger)
+                                .ToList();
 
-                            foreach (string passenger in checkedInQueue)
+                            foreach (string passenger in queueList)
                             {
-                                Console.WriteLine("Position " + position + ": " + passenger);
-                                position++;
+                                Console.WriteLine(passenger);
                             }
                         }
 
@@ -616,7 +645,7 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        int count = 0;
+                        int count = checkedInQueue.Count;
 
                         while (checkedInQueue.Count > 0)
                         {
@@ -637,15 +666,7 @@ namespace FlightManagementSystem
 
                         string boardedPassenger = boardingStack.Pop();
 
-                        string seat = seatRow + seatLetter.ToString();
-
-                        seatLetter++;
-
-                        if (seatLetter > 'F')
-                        {
-                            seatLetter = 'A';
-                            seatRow++;
-                        }
+                        string seat = GenerateSeat();
 
                         if (passengerSeatMap.ContainsKey(boardedPassenger))
                         {
@@ -669,12 +690,13 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        int position = 1;
+                        var stackList = boardingStack
+                            .Select((passenger, index) => "Position " + (index + 1) + ": " + passenger)
+                            .ToList();
 
-                        foreach (string passenger in boardingStack)
+                        foreach (string passenger in stackList)
                         {
-                            Console.WriteLine("Position " + position + ": " + passenger);
-                            position++;
+                            Console.WriteLine(passenger);
                         }
 
                         break;
@@ -688,9 +710,14 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        foreach (KeyValuePair<string, string> passenger in passengerSeatMap)
+                        var boardingLog = passengerSeatMap
+                            .OrderBy(passenger => passenger.Key)
+                            .Select(passenger => passenger.Key + " | Seat: " + passenger.Value)
+                            .ToList();
+
+                        foreach (string passenger in boardingLog)
                         {
-                            Console.WriteLine(passenger.Key + " | Seat: " + passenger.Value);
+                            Console.WriteLine(passenger);
                         }
 
                         break;
@@ -708,16 +735,8 @@ namespace FlightManagementSystem
             Console.WriteLine("Enter flight number:");
             string flight = Console.ReadLine();
 
-            bool flightFound = false;
-
-            for (int i = 0; i < flightNumbers.Length; i++)
-            {
-                if (flightNumbers[i].ToLower() == flight.ToLower())
-                {
-                    flightFound = true;
-                    flight = flightNumbers[i];
-                }
-            }
+            bool flightFound = flightNumbers
+                .Any(f => f.Equals(flight, StringComparison.OrdinalIgnoreCase));
 
             if (flightFound == false)
             {
@@ -725,54 +744,66 @@ namespace FlightManagementSystem
                 return;
             }
 
-            List<string> manifestRecords = new List<string>();
+            flight = flightNumbers
+                .First(f => f.Equals(flight, StringComparison.OrdinalIgnoreCase));
 
-            foreach (KeyValuePair<string, string> booking in bookingRecord)
-            {
-                string ticketId = booking.Key;
-                string bookingValue = booking.Value;
-
-                string[] bookingParts = bookingValue.Split('|');
-
-                string bookedFlight = bookingParts[0];
-                string bookedDate = bookingParts[1];
-
-                if (bookedFlight.ToLower() == flight.ToLower())
+            List<string> manifestRecords = bookingRecord
+                .Select(booking =>
                 {
+                    string ticketId = booking.Key;
+                    string bookingValue = booking.Value;
+
+                    string[] bookingParts = bookingValue.Split('|');
+
+                    if (bookingParts.Length < 2)
+                    {
+                        return "";
+                    }
+
+                    string bookedFlight = bookingParts[0];
+                    string bookedDate = bookingParts[1];
+
+                    if (bookedFlight.Equals(flight, StringComparison.OrdinalIgnoreCase) == false)
+                    {
+                        return "";
+                    }
+
                     int passengerIndex = FindTicketIndex(ticketId);
 
-                    if (passengerIndex != -1)
+                    if (passengerIndex == -1)
                     {
-                        string passengerName = passengerNames[passengerIndex];
-
-                        string seat = "—";
-
-                        if (passengerSeatMap.ContainsKey(passengerName))
-                        {
-                            seat = passengerSeatMap[passengerName];
-                        }
-
-                        string status = "Booked";
-
-                        if (passengerSeatMap.ContainsKey(passengerName))
-                        {
-                            status = "Boarded";
-                        }
-                        else if (checkedInQueue.Contains(passengerName))
-                        {
-                            status = "Checked-In";
-                        }
-                        else if (cancelledTickets.Contains(ticketId))
-                        {
-                            status = "Cancelled";
-                        }
-
-                        string record = passengerName + "|" + ticketId + "|" + bookedDate + "|" + seat + "|" + status;
-
-                        manifestRecords.Add(record);
+                        return "";
                     }
-                }
-            }
+
+                    string passengerName = passengerNames[passengerIndex];
+
+                    string seat = "—";
+
+                    if (passengerSeatMap.ContainsKey(passengerName))
+                    {
+                        seat = passengerSeatMap[passengerName];
+                    }
+
+                    string status = "Booked";
+
+                    if (passengerSeatMap.ContainsKey(passengerName))
+                    {
+                        status = "Boarded";
+                    }
+                    else if (checkedInQueue.Contains(passengerName))
+                    {
+                        status = "Checked-In";
+                    }
+                    else if (cancelledTickets.Contains(ticketId))
+                    {
+                        status = "Cancelled";
+                    }
+
+                    return passengerName + "|" + ticketId + "|" + bookedDate + "|" + seat + "|" + status;
+                })
+                .Where(record => record != "")
+                .OrderBy(record => record.Split('|')[0])
+                .ToList();
 
             if (manifestRecords.Count == 0)
             {
@@ -780,30 +811,7 @@ namespace FlightManagementSystem
                 return;
             }
 
-            for (int i = 0; i < manifestRecords.Count - 1; i++)
-            {
-                for (int j = 0; j < manifestRecords.Count - i - 1; j++)
-                {
-                    string[] firstParts = manifestRecords[j].Split('|');
-                    string[] secondParts = manifestRecords[j + 1].Split('|');
-
-                    string firstName = firstParts[0];
-                    string secondName = secondParts[0];
-
-                    if (firstName.CompareTo(secondName) > 0)
-                    {
-                        string temp = manifestRecords[j];
-                        manifestRecords[j] = manifestRecords[j + 1];
-                        manifestRecords[j + 1] = temp;
-                    }
-                }
-            }
-
             Console.WriteLine("No. | Passenger Name | Ticket ID | Date | Seat | Status");
-
-            int boardedCount = 0;
-            int checkedInCount = 0;
-            int cancelledCount = 0;
 
             for (int i = 0; i < manifestRecords.Count; i++)
             {
@@ -816,20 +824,11 @@ namespace FlightManagementSystem
                 string status = parts[4];
 
                 Console.WriteLine((i + 1) + ". " + passengerName + " | " + ticketId + " | " + date + " | " + seat + " | " + status);
-
-                if (status == "Boarded")
-                {
-                    boardedCount++;
-                }
-                else if (status == "Checked-In")
-                {
-                    checkedInCount++;
-                }
-                else if (status == "Cancelled")
-                {
-                    cancelledCount++;
-                }
             }
+
+            int boardedCount = manifestRecords.Count(record => record.Split('|')[4] == "Boarded");
+            int checkedInCount = manifestRecords.Count(record => record.Split('|')[4] == "Checked-In");
+            int cancelledCount = manifestRecords.Count(record => record.Split('|')[4] == "Cancelled");
 
             Console.WriteLine("Manifest Summary");
             Console.WriteLine("Total passengers on flight: " + manifestRecords.Count);
@@ -869,12 +868,13 @@ namespace FlightManagementSystem
                         }
                         else
                         {
-                            int position = 1;
+                            var waitlist = waitlistQueue
+                                .Select((passenger, index) => "Position " + (index + 1) + ": " + passenger)
+                                .ToList();
 
-                            foreach (string passenger in waitlistQueue)
+                            foreach (string passenger in waitlist)
                             {
-                                Console.WriteLine("Position " + position + ": " + passenger);
-                                position++;
+                                Console.WriteLine(passenger);
                             }
                         }
 
@@ -936,19 +936,12 @@ namespace FlightManagementSystem
                         string targetPassenger = Console.ReadLine();
 
                         bool found = false;
-                        string selectedPassenger = "";
+                        string selectedPassenger = waitlistQueue
+                            .FirstOrDefault(passenger => passenger.Equals(targetPassenger,
+                                StringComparison.OrdinalIgnoreCase)); // here i change so it will search without
+                                                                      // removing anyone from the waitlist
 
-                        foreach (string passenger in waitlistQueue)
-                        {
-                            if (passenger.ToLower() == targetPassenger.ToLower())
-                            {
-                                found = true;
-                                selectedPassenger = passenger;
-                                break;
-                            }
-                        } // here i change so it will search without removing anyone from the waitlist
-
-                        if (found == false)
+                        if (selectedPassenger == null)
                         {
                             Console.WriteLine("Passenger was not found in the waitlist.");
                             break;
@@ -998,8 +991,10 @@ namespace FlightManagementSystem
                     case 4:
                         Console.WriteLine("Enter passenger name:");
                         string seatPassenger = Console.ReadLine();
+                        string realPassengerName = passengerSeatMap.Keys
+                            .FirstOrDefault(name => name.Equals(seatPassenger,StringComparison.OrdinalIgnoreCase));
 
-                        if (passengerSeatMap.ContainsKey(seatPassenger) == false)
+                        if (realPassengerName == null)
                         {
                             Console.WriteLine("Passenger is not boarded, so seat cannot be reassigned.");
                             break;
