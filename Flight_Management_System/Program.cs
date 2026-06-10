@@ -752,7 +752,9 @@ namespace FlightManagementSystem
                             break;
                         }
 
-                        if (checkedInQueue.Count < 10)
+                        int activePassengers = checkedInQueue.Count + boardingStack.Count + passengerSeatMap.Count;
+
+                        if (checkedInQueue.Count < 2)
                         {
                             checkedInQueue.Enqueue(passengerName);
                             Console.WriteLine(passengerName + " added to check-in queue.");
