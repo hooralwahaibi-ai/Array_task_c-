@@ -33,7 +33,208 @@ namespace FlightManagementSystem
 
         static int seatRow = 10;
         static char seatLetter = 'A';
+        // files name
+        static string passengersFile = "passengers.txt";
+        static string bookingsFile = "bookings.txt";
+        static string cancelledFile = "cancelledTickets.txt";
+        static string checkedInFile = "checkedInQueue.txt";
+        static string waitlistFile = "waitlistQueue.txt";
+        static string boardingStackFile = "boardingStack.txt";
+        static string seatsFile = "passengerSeats.txt";
+        static string stateFile = "seatState.txt";
 
+        // about dataset functions
+        public static void SaveData()
+        {
+            List<string> passengerLines = passengerNames
+                .Select((name, index) => name + "|" + ticketNumbers[index])
+                .ToList();
+
+            File.WriteAllLines(passengersFile, passengerLines);
+
+            List<string> bookingLines = bookingRecord
+                .Select(booking => booking.Key + "|" + booking.Value)
+                .ToList();
+
+            File.WriteAllLines(bookingsFile, bookingLines);
+
+            File.WriteAllLines(cancelledFile, cancelledTickets);
+
+            File.WriteAllLines(checkedInFile, checkedInQueue);
+
+            File.WriteAllLines(waitlistFile, waitlistQueue);
+
+            List<string> stackLines = boardingStack
+                .Reverse()
+                .ToList();
+
+            File.WriteAllLines(boardingStackFile, stackLines);
+
+            List<string> seatLines = passengerSeatMap
+                .Select(passenger => passenger.Key + "|" + passenger.Value)
+                .ToList();
+
+            File.WriteAllLines(seatsFile, seatLines);
+
+            List<string> stateLines = new List<string>();
+            stateLines.Add(seatRow.ToString());
+            stateLines.Add(seatLetter.ToString());
+
+            File.WriteAllLines(stateFile, stateLines);
+        }
+        public static void LoadData()
+        {
+            if (File.Exists(passengersFile))
+            {
+                passengerNames.Clear();
+                ticketNumbers.Clear();
+
+                string[] lines = File.ReadAllLines(passengersFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        string[] parts = line.Split('|');
+
+                        if (parts.Length >= 2)
+                        {
+                            passengerNames.Add(parts[0]);
+                            ticketNumbers.Add(parts[1]);
+                        }
+                    }
+                }
+            }
+
+            bookingRecord.Clear();
+
+            if (File.Exists(bookingsFile))
+            {
+                string[] lines = File.ReadAllLines(bookingsFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        string[] parts = line.Split('|');
+
+                        if (parts.Length >= 3)
+                        {
+                            string ticketId = parts[0];
+                            string flight = parts[1];
+                            string date = parts[2];
+
+                            if (bookingRecord.ContainsKey(ticketId) == false)
+                            {
+                                bookingRecord.Add(ticketId, flight + "|" + date);
+                            }
+                        }
+                    }
+                }
+            }
+
+            cancelledTickets.Clear();
+
+            if (File.Exists(cancelledFile))
+            {
+                cancelledTickets = File.ReadAllLines(cancelledFile)
+                    .Where(line => line.Trim() != "")
+                    .ToList();
+            }
+
+            checkedInQueue.Clear();
+
+            if (File.Exists(checkedInFile))
+            {
+                string[] lines = File.ReadAllLines(checkedInFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        checkedInQueue.Enqueue(line);
+                    }
+                }
+            }
+
+            waitlistQueue.Clear();
+
+            if (File.Exists(waitlistFile))
+            {
+                string[] lines = File.ReadAllLines(waitlistFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        waitlistQueue.Enqueue(line);
+                    }
+                }
+            }
+
+            boardingStack.Clear();
+
+            if (File.Exists(boardingStackFile))
+            {
+                string[] lines = File.ReadAllLines(boardingStackFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        boardingStack.Push(line);
+                    }
+                }
+            }
+
+            passengerSeatMap.Clear();
+
+            if (File.Exists(seatsFile))
+            {
+                string[] lines = File.ReadAllLines(seatsFile);
+
+                foreach (string line in lines)
+                {
+                    if (line.Trim() != "")
+                    {
+                        string[] parts = line.Split('|');
+
+                        if (parts.Length >= 2)
+                        {
+                            string passengerName = parts[0];
+                            string seat = parts[1];
+
+                            if (passengerSeatMap.ContainsKey(passengerName) == false)
+                            {
+                                passengerSeatMap.Add(passengerName, seat);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (File.Exists(stateFile))
+            {
+                string[] lines = File.ReadAllLines(stateFile);
+
+                if (lines.Length >= 2)
+                {
+                    int row;
+                    bool rowResult = int.TryParse(lines[0], out row);
+
+                    if (rowResult == true)
+                    {
+                        seatRow = row;
+                    }
+
+                    if (lines[1].Length > 0)
+                    {
+                        seatLetter = lines[1][0];
+                    }
+                }
+            }
+        }
+        //helper functions 
 
         public static int FindTicketIndex(string ticketId)
         {
@@ -231,6 +432,8 @@ namespace FlightManagementSystem
             passengerNames.Add(name);
             ticketNumbers.Add(ticketId);
 
+            SaveData();
+
             Console.WriteLine("Passenger registered successfully.");
             Console.WriteLine("Passenger Name: " + name);
             Console.WriteLine("Ticket ID: " + ticketId);
@@ -302,6 +505,7 @@ namespace FlightManagementSystem
             }
 
             SaveBooking(ticketId, selectedFlight, selectedDate);
+            SaveData();
 
             Console.WriteLine("Passenger Name: " + passengerNames[passengerIndex]);
             Console.WriteLine("Ticket ID: " + ticketId);
@@ -426,6 +630,7 @@ namespace FlightManagementSystem
             }
 
             SaveBooking(ticketId, newFlight, newDate);
+            SaveData();
 
             Console.WriteLine(" New Update");
             Console.WriteLine("Passenger: " + passengerNames[passengerIndex]);
@@ -484,6 +689,7 @@ namespace FlightManagementSystem
             {
                 RemovePassengerFromStack(boardingStack, passengerName);
             }
+            SaveData();
 
             Console.WriteLine(" Cancellation Summary ");
             Console.WriteLine("Passenger Name: " + passengerName);
@@ -556,6 +762,7 @@ namespace FlightManagementSystem
                             waitlistQueue.Enqueue(passengerName);
                             Console.WriteLine(passengerName + " placed on waitlist because queue is full.");
                         }
+                        SaveData();
 
                         break;
 
@@ -578,7 +785,7 @@ namespace FlightManagementSystem
                             }
                         }
 
-                        Console.WriteLine("We have whait list with :" + waitlistQueue.Count + "persond");
+                        Console.WriteLine("We have whait list with :" + waitlistQueue.Count + "persond"); 
                         break;
 
                     case 3:
@@ -599,7 +806,7 @@ namespace FlightManagementSystem
 
                             Console.WriteLine(waitPassenger + " moved from waitlist to check-in queue.");
                         }
-
+                        SaveData();
                         break;
 
                     case 0:
@@ -633,19 +840,21 @@ namespace FlightManagementSystem
                 switch (option)
                 {
                     case 1:
-                        if (checkedInQueue.Count == 0 && boardingStack.Count > 0)
+                        if (boardingStack.Count > 0)
                         {
-                            Console.WriteLine("Boarding stack is already loaded");
+                            Console.WriteLine("Boarding stack already has passengers.");
+                            Console.WriteLine("Use option 2 to board next passenger.");
                             break;
                         }
 
                         if (checkedInQueue.Count == 0)
                         {
-                            Console.WriteLine("No checked-in passengers to load");
+                            Console.WriteLine("No checked-in passengers to load.");
+                            Console.WriteLine("Go to Passenger Check-In first and add passengers.");
                             break;
                         }
 
-                        int count = checkedInQueue.Count;
+                        int count = 0;
 
                         while (checkedInQueue.Count > 0)
                         {
@@ -654,7 +863,10 @@ namespace FlightManagementSystem
                             count++;
                         }
 
+                        SaveData();
+
                         Console.WriteLine("Loaded passengers to boarding stack: " + count);
+                        Console.WriteLine("Check-in queue is now empty because passengers moved to boarding stack.");
                         break;
 
                     case 2:
@@ -676,6 +888,8 @@ namespace FlightManagementSystem
                         {
                             passengerSeatMap.Add(boardedPassenger, seat);
                         }
+
+                        SaveData();
 
                         Console.WriteLine("Passenger boarded: " + boardedPassenger);
                         Console.WriteLine("Assigned seat: " + seat);
@@ -923,6 +1137,7 @@ namespace FlightManagementSystem
                         SaveBooking(ticketId, selectedFlight, selectedDate);
                         waitlistQueue.Dequeue(); //also i add this (i do this so passenger will be removed from
                                                  //the waitlist only after flight and date are selected correctly)
+                        SaveData();
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + passengerName);
@@ -979,7 +1194,8 @@ namespace FlightManagementSystem
 
                         SaveBooking(selectedTicket, newFlight, newDate);
                         RemovePassengerFromQueue(waitlistQueue, selectedPassenger); // here the specific passenger will be removed
-                                                                                    // from the waitlist only after booking is successful.
+                        
+                        SaveData();                                                     // from the waitlist only after booking is successful.
 
                         Console.WriteLine("Promotion Confirmation");
                         Console.WriteLine("Passenger: " + selectedPassenger);
@@ -1013,6 +1229,8 @@ namespace FlightManagementSystem
 
                         passengerSeatMap[seatPassenger] = newSeat;
 
+                        SaveData();
+
                         Console.WriteLine("Seat Reassignment Confirmation");
                         Console.WriteLine("Passenger: " + seatPassenger);
                         Console.WriteLine("Old Seat: " + oldSeat);
@@ -1028,6 +1246,7 @@ namespace FlightManagementSystem
 
         static void Main(string[] args)
         {
+            LoadData();
             bool exit = false;
 
             while (exit == false)
@@ -1087,6 +1306,7 @@ namespace FlightManagementSystem
                         ManageWaitlistAndSeatAssignment();
                         break;
                     case 0:
+                        SaveData();
                         exit = true;
                         break;
                 }
